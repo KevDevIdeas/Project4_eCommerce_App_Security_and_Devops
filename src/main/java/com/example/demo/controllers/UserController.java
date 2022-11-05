@@ -2,8 +2,9 @@ package com.example.demo.controllers;
 
 import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,7 @@ import com.example.demo.model.requests.CreateUserRequest;
 @RequestMapping("/api/user")
 public class UserController {
 
-	public static final Logger log = LoggerFactory.getLogger(UserController.class);
+	public static final Logger log = LogManager.getLogger(UserController.class);
 
 	@Autowired
 	private UserRepository userRepository;
@@ -51,11 +52,16 @@ public class UserController {
 	public ResponseEntity<User> createUser(@RequestBody CreateUserRequest createUserRequest) {
 		User user = new User();
 		user.setUsername(createUserRequest.getUsername());
-		log.info("set Username {}", createUserRequest.getUsername());
+		log.info("set username {}", createUserRequest.getUsername());
 		if(createUserRequest.getPassword().length()<7 ||
 				!createUserRequest.getPassword().equals(createUserRequest.getConfirmPassword())){
-			//System.out.println("Error - Either length is less than 7 or pass and conf pass do not match. Unable to create ",
-			//		createUserRequest.getUsername());
+
+			if (createUserRequest.getPassword().length()<7){
+			log.error("Request: createUser, message: password does not meet requirement of <7");
+			}
+			else if (!createUserRequest.getPassword().equals(createUserRequest.getConfirmPassword())){
+				log.error("Request: createUser, message: confirm password does not match");
+			}
 			return ResponseEntity.badRequest().build();
 		}
 		user.setPassword(bCryptPasswordEncoder.encode(createUserRequest.getPassword()));
@@ -63,6 +69,7 @@ public class UserController {
 		cartRepository.save(cart);
 		user.setCart(cart);
 		userRepository.save(user);
+		log.info("Request: createUser, message: User {} has been created", user.getUsername());
 		return ResponseEntity.ok(user);
 	}
 	
